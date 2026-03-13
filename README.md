@@ -83,18 +83,70 @@ docker compose down -v
 
 ## Installation (production)
 
+### General (any pretix installation)
+
+The plugin is installed into the same Python environment that runs pretix.
+
+Install directly from GitHub:
+
 ```bash
-pip install pretix-voucher-statistics
+pip install git+https://github.com/vlietz/pretix-voucher-statistics.git
 ```
 
-Add `pretix_voucher_statistics` to the `plugins` list in `pretix.cfg`, then run:
+Or build and install inside the container (recommended when host and server architectures differ):
+
+Clone the repo on the server, copy the source into the running container, and let pip build and install it there. This ensures the wheel is compiled for the correct OS and CPU architecture (important when your dev machine is macOS/ARM and the server is Linux/x86).
 
 ```bash
-pretix migrate
-pretix collectstatic
+# 1. SSH into your server
+ssh yourserver
+
+# 2. Clone the repo on the server
+git clone https://github.com/vlietz/pretix-voucher-statistics.git /opt/pretix-voucher-statistics
+
+# 3. Copy the source into the running pretix container
+docker compose cp /opt/pretix-voucher-statistics pretix:/tmp/plugin
+
+# 4. Build and install inside the container (run as root so pip can write build files)
+docker compose exec --user root pretix pip3 install /tmp/plugin
+
+# 5. Restart pretix to pick up the new package
+docker compose restart pretix
 ```
 
-Restart the pretix web and worker processes. Enable the plugin per-event via **Event Settings -> Plugins**.
+After installing, restart the pretix web workers so the new package is picked up:
+
+```bash
+# Typical systemd setup
+systemctl restart pretix-web
+
+# Or supervisord
+supervisorctl restart pretixweb
+```
+
+Then enable the plugin per event in the pretix control panel: **Settings -> Plugins -> Voucher Statistics -> Enable**
+
+### Updating to a newer version
+
+```bash
+# Pull the latest source on the server
+cd /opt/pretix-voucher-statistics && git pull
+
+# Remove the old copy inside the container first (otherwise cp copies into a subdirectory)
+docker compose exec --user root pretix rm -rf /tmp/plugin
+
+# Copy updated source into the container and reinstall
+docker compose cp /opt/pretix-voucher-statistics pretix:/tmp/plugin
+docker compose exec --user root pretix pip3 install --upgrade --no-cache-dir /tmp/plugin
+docker compose restart pretix
+```
+
+Or if installed directly via pip:
+
+```bash
+pip install --upgrade git+https://github.com/vlietz/pretix-voucher-statistics.git
+systemctl restart pretix-web
+```
 
 ---
 
