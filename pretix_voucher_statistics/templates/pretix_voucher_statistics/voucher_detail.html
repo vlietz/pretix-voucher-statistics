@@ -33,7 +33,12 @@
      data-label-this-voucher="{% trans 'This Voucher' %}"
      data-label-other-vouchers="{% trans 'Other Vouchers' %}"
      data-label-no-voucher="{% trans 'No Voucher' %}"
-     data-label-error="{% trans 'Failed to load chart data.' %}">
+     data-label-error="{% trans 'Failed to load chart data.' %}"
+     data-rampup-url="{% url 'plugins:pretix_voucher_statistics:voucher-rampup-data' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}"
+     data-label-days-before="{% trans 'Days Before Event' %}"
+     data-label-event-day="{% trans 'Event day' %}"
+     data-label-all-vouchers="{% trans 'All Vouchers – Daily Sales' %}"
+     data-label-no-rampup-data="{% trans 'No voucher sales in the 30 days before the event.' %}">
 </div>
 
 <!-- Tab navigation (Bootstrap 3) -->
@@ -202,6 +207,19 @@
                     <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
                 </div>
                 <canvas id="comparisonChart" style="display:none; max-height:350px;"></canvas>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>{% trans "All Vouchers – Daily Sales" %}</strong>
+                <span class="text-muted"> – {% trans "30 days before event, this voucher highlighted" %}</span>
+            </div>
+            <div class="panel-body">
+                <div id="rampup-loading" class="text-center text-muted" style="padding:30px 0">
+                    <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+                </div>
+                <canvas id="rampupChart" style="display:none; max-height:350px;"></canvas>
             </div>
         </div>
 

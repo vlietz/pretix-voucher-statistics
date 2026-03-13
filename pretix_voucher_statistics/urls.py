@@ -16,6 +16,8 @@ urlpatterns = [
          views.VoucherTimelineDataView.as_view(), name='voucher-timeline-data'),
     path('control/event/<str:organizer>/<str:event>/voucher-stats/<int:pk>/data/comparison/',
          views.VoucherComparisonDataView.as_view(), name='voucher-comparison-data'),
+    path('control/event/<str:organizer>/<str:event>/voucher-stats/<int:pk>/data/rampup/',
+         views.VoucherRampupDataView.as_view(), name='voucher-rampup-data'),
 
     # Organizer-level views
     path('control/organizer/<str:organizer>/voucher-stats/',

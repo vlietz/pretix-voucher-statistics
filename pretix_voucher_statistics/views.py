@@ -253,6 +253,55 @@ class VoucherTimelineDataView(EventVoucherViewMixin, View):
         return JsonResponse(data)
 
 
+class VoucherRampupDataView(EventVoucherViewMixin, View):
+    """Daily ticket counts for every voucher in the event, day by day for 30 days before the event."""
+
+    def get(self, request, *args, **kwargs):
+        voucher = get_object_or_404(Voucher, pk=self.kwargs['pk'], event=request.event)
+        event = request.event
+
+        if not event.date_from:
+            return JsonResponse({'vouchers': []})
+
+        event_start = event.date_from.date()
+        window_start = event_start - timedelta(days=30)
+
+        rows = (
+            _positions_qs(event=event)
+            .filter(
+                voucher__isnull=False,
+                order__datetime__date__gte=window_start,
+                order__datetime__date__lte=event_start,
+            )
+            .annotate(date=TruncDate('order__datetime'))
+            .values('voucher_id', 'voucher__code', 'voucher__tag', 'date')
+            .annotate(count=Count('id'))
+            .order_by('voucher_id', 'date')
+        )
+
+        voucher_data = defaultdict(lambda: {'code': '', 'tag': '', 'dates': {}})
+        for row in rows:
+            vid = row['voucher_id']
+            voucher_data[vid]['code'] = row['voucher__code']
+            voucher_data[vid]['tag'] = row['voucher__tag'] or ''
+            voucher_data[vid]['dates'][row['date']] = row['count']
+
+        result = []
+        for vid, vdata in voucher_data.items():
+            points = []
+            for days_before in range(30, -1, -1):
+                date = event_start - timedelta(days=days_before)
+                points.append({'x': -days_before, 'y': vdata['dates'].get(date, 0)})
+            result.append({
+                'code': vdata['code'],
+                'tag': vdata['tag'],
+                'is_this': vid == voucher.pk,
+                'points': points,
+            })
+
+        return JsonResponse({'vouchers': result})
+
+
 class VoucherComparisonDataView(EventVoucherViewMixin, View):
     def get(self, request, *args, **kwargs):
         voucher = get_object_or_404(

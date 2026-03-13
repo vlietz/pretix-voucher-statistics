@@ -4,6 +4,7 @@
 
     var timelineUrl = root.dataset.timelineUrl;
     var comparisonUrl = root.dataset.comparisonUrl;
+    var rampupUrl = root.dataset.rampupUrl;
 
     var COLORS = {
         primary:   'rgba(54, 162, 235, 1)',
@@ -109,6 +110,75 @@
             })
             .catch(function () {
                 document.getElementById('comparison-loading').innerHTML =
+                    '<span class="text-danger">' + root.dataset.labelError + '</span>';
+            });
+
+        fetch(rampupUrl)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var loadingEl = document.getElementById('rampup-loading');
+                if (!data.vouchers || data.vouchers.length === 0) {
+                    loadingEl.innerHTML = '<span class="text-muted">' + root.dataset.labelNoRampupData + '</span>';
+                    return;
+                }
+                loadingEl.style.display = 'none';
+                document.getElementById('rampupChart').style.display = 'block';
+
+                var PALETTE = [
+                    'rgba(54,  162, 235, 1)',
+                    'rgba(75,  192, 100, 1)',
+                    'rgba(255, 159,  64, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 205,  86, 1)',
+                    'rgba(201, 203, 207, 1)',
+                    'rgba(255, 128,   0, 1)',
+                ];
+                var paletteIdx = 0;
+                var datasets = data.vouchers.map(function (v) {
+                    var isThis = v.is_this;
+                    var c = isThis ? 'rgba(255, 99, 132, 1)' : PALETTE[paletteIdx++ % PALETTE.length];
+                    return {
+                        label: v.code + (v.tag ? ' (' + v.tag + ')' : ''),
+                        data: v.points,
+                        borderColor: c,
+                        backgroundColor: c.replace(', 1)', isThis ? ', 0.2)' : ', 0.05)'),
+                        borderWidth: isThis ? 2.5 : 1,
+                        fill: false,
+                        tension: 0.3,
+                        parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                        order: isThis ? 0 : 1,
+                    };
+                });
+
+                new Chart(document.getElementById('rampupChart'), {
+                    type: 'line',
+                    data: { datasets: datasets },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: { display: true, text: root.dataset.labelDaysBefore },
+                                min: -30, max: 0,
+                                ticks: {
+                                    stepSize: 5,
+                                    callback: function (v) {
+                                        return v === 0 ? root.dataset.labelEventDay : v;
+                                    },
+                                },
+                            },
+                            y: {
+                                title: { display: true, text: root.dataset.labelTickets },
+                                beginAtZero: true,
+                            },
+                        },
+                    },
+                });
+            })
+            .catch(function () {
+                document.getElementById('rampup-loading').innerHTML =
                     '<span class="text-danger">' + root.dataset.labelError + '</span>';
             });
     }
