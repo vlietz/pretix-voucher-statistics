@@ -1,0 +1,105 @@
+{% extends "pretixcontrol/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Voucher Statistics – Organizer Overview" %}{% endblock %}
+
+{% block content %}
+<h1>{% trans "Voucher Statistics" %}</h1>
+<p class="text-muted">{% trans "Compare ticket sales across events." %}</p>
+
+{# Data container – all config via data-* to avoid inline JS #}
+<div id="org-stats-root"
+     data-data-url="{% url 'plugins:pretix_voucher_statistics:org-statistics-data' organizer=request.organizer.slug %}"
+     data-selected-events="{{ selected_slugs_json }}"
+     data-label-date="{% trans 'Date' %}"
+     data-label-cumulative="{% trans 'Cumulative Tickets' %}"
+     data-label-days-before="{% trans 'Days Before Event' %}"
+     data-label-event-day="{% trans 'Event day' %}"
+     data-label-total-tickets="{% trans 'total tickets' %}"
+     data-label-top-vouchers="{% trans 'Top Vouchers' %}"
+     data-label-no-vouchers="{% trans 'No vouchers with tickets.' %}"
+     data-label-code="{% trans 'Code' %}"
+     data-label-tag="{% trans 'Tag' %}"
+     data-label-tickets="{% trans 'Tickets' %}"
+     data-label-pct="{% trans '% of Total' %}"
+     data-label-error="{% trans 'Failed to load data.' %}"
+     data-label-loading="{% trans 'Loading…' %}">
+</div>
+
+<!-- Event selector -->
+<form method="get">
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>{% trans "Select Events" %}</strong></div>
+        <div class="panel-body">
+            <div class="row">
+                {% for event in all_events %}
+                <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="events" value="{{ event.slug }}"
+                                   {% if event.slug in selected_slugs %}checked{% endif %}>
+                            {{ event.name }}
+                            {% if event.date_from %}
+                            <br><small class="text-muted">{{ event.date_from|date:"Y-m-d" }}</small>
+                            {% endif %}
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="panel-footer">
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i class="fa fa-refresh"></i> {% trans "Update" %}
+            </button>
+            <span class="text-muted">
+                <small>
+                    {% blocktrans with count=selected_events|length %}{{ count }} event(s) selected{% endblocktrans %}
+                </small>
+            </span>
+        </div>
+    </div>
+</form>
+
+{% if selected_events %}
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong>{% trans "Cumulative Tickets Over Time" %}</strong>
+        <span class="text-muted"> – {% trans "per event" %}</span>
+    </div>
+    <div class="panel-body">
+        <div id="timeline-loading" class="text-center text-muted" style="padding:30px 0">
+            <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+        </div>
+        <canvas id="timelineChart" style="display:none; max-height:400px;"></canvas>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong>{% trans "Ticket Ramp-up: 30 Days Before Event Start" %}</strong>
+        <span class="text-muted"> – {% trans "x = days before event (0 = event day), y = cumulative tickets" %}</span>
+    </div>
+    <div class="panel-body">
+        <div id="days-before-loading" class="text-center text-muted" style="padding:30px 0">
+            <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+        </div>
+        <canvas id="daysBeforeChart" style="display:none; max-height:400px;"></canvas>
+    </div>
+</div>
+
+<div id="leaderboard-section">
+    <div class="text-center text-muted" style="padding:30px 0">
+        <i class="fa fa-spinner fa-spin"></i> {% trans "Loading leaderboards…" %}
+    </div>
+</div>
+
+<script src="{% static 'pretix_voucher_statistics/js/chart.min.js' %}"></script>
+<script src="{% static 'pretix_voucher_statistics/js/org_statistics.js' %}"></script>
+
+{% else %}
+<div class="alert alert-info">{% trans "Please select at least one event above." %}</div>
+{% endif %}
+
+{% endblock %}

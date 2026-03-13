@@ -1,0 +1,75 @@
+{% extends "pretixcontrol/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Voucher Statistics" %}{% endblock %}
+
+{% block content %}
+<h1>{% trans "Voucher Statistics" %}</h1>
+<p class="text-muted">
+    {% blocktrans with name=event.name %}Statistics for all vouchers in {{ name }}{% endblocktrans %}
+</p>
+
+{% if vouchers %}
+<div class="table-responsive">
+<table class="table table-hover" id="voucher-stats-table">
+    <thead>
+        <tr>
+            <th>
+                <a href="?sort=code&dir={% if sort == 'code' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                    {% trans "Code" %}{% if sort == 'code' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="?sort=tag&dir={% if sort == 'tag' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                    {% trans "Tag / Comment" %}{% if sort == 'tag' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="?sort=ticket_count&dir={% if sort == 'ticket_count' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                    {% trans "Tickets" %}{% if sort == 'ticket_count' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                </a>
+            </th>
+            <th>{% trans "Actions" %}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for voucher in vouchers %}
+        <tr>
+            <td>
+                <a href="{% url 'plugins:pretix_voucher_statistics:voucher-detail' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}">
+                    <code>{{ voucher.code }}</code>
+                </a>
+            </td>
+            <td>{{ voucher.tag|default:"—" }}</td>
+            <td>
+                {% if voucher.ticket_count > 0 %}
+                <span class="label label-success">{{ voucher.ticket_count }}</span>
+                {% else %}
+                <span class="text-muted">0</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'plugins:pretix_voucher_statistics:voucher-detail' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}"
+                   class="btn btn-xs btn-default">
+                    <i class="fa fa-bar-chart"></i>
+                    {% trans "View Statistics" %}
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<p class="text-muted">
+    <small>
+        {% blocktrans with count=vouchers|length %}Showing {{ count }} vouchers. Only paid and pending orders are counted.{% endblocktrans %}
+    </small>
+</p>
+
+{% else %}
+<div class="alert alert-info">
+    {% trans "No vouchers found for this event." %}
+</div>
+{% endif %}
+{% endblock %}

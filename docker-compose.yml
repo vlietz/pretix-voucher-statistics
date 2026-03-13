@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: pretix
+      POSTGRES_USER: pretix
+      POSTGRES_PASSWORD: pretix
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pretix"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+  pretix:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:80"
+    volumes:
+      # Mount plugin source for live code edits (Python files only; restart needed)
+      - .:/plugins/pretix-voucher-statistics
+      - pretix_data:/data
+      - ./pretix.cfg:/etc/pretix/pretix.cfg:ro
+    environment:
+      PRETIX_PLUGINS_DEFAULT: pretix_voucher_statistics
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  pretix_data:

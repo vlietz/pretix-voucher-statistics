@@ -1,0 +1,214 @@
+{% extends "pretixcontrol/base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ voucher.code }} – {% trans "Voucher Statistics" %}{% endblock %}
+
+{% block content %}
+<ol class="breadcrumb">
+    <li>
+        <a href="{% url 'plugins:pretix_voucher_statistics:voucher-list' organizer=request.organizer.slug event=request.event.slug %}">
+            {% trans "Voucher Statistics" %}
+        </a>
+    </li>
+    <li class="active"><code>{{ voucher.code }}</code></li>
+</ol>
+
+<h1>
+    <code>{{ voucher.code }}</code>
+    {% if voucher.tag %}<small class="text-muted">{{ voucher.tag }}</small>{% endif %}
+</h1>
+<p class="text-muted">
+    {% blocktrans with count=total_tickets %}{{ count }} ticket(s) via this voucher (paid + pending orders){% endblocktrans %}
+</p>
+
+{# Data container – all config passed via data-* so no inline JS is needed #}
+<div id="voucher-stats-root"
+     data-timeline-url="{% url 'plugins:pretix_voucher_statistics:voucher-timeline-data' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}"
+     data-comparison-url="{% url 'plugins:pretix_voucher_statistics:voucher-comparison-data' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}"
+     data-active-tab="{{ active_tab }}"
+     data-label-cumulative="{% trans 'Cumulative Tickets' %}"
+     data-label-daily="{% trans 'Daily Tickets' %}"
+     data-label-date="{% trans 'Date' %}"
+     data-label-tickets="{% trans 'Tickets' %}"
+     data-label-this-voucher="{% trans 'This Voucher' %}"
+     data-label-other-vouchers="{% trans 'Other Vouchers' %}"
+     data-label-no-voucher="{% trans 'No Voucher' %}"
+     data-label-error="{% trans 'Failed to load chart data.' %}">
+</div>
+
+<!-- Tab navigation (Bootstrap 3) -->
+<ul class="nav nav-tabs" id="voucherTabs">
+    <li {% if active_tab != 'statistics' %}class="active"{% endif %}>
+        <a data-toggle="tab" href="#orders-pane">
+            <i class="fa fa-table"></i> {% trans "Orders & Attendees" %}
+        </a>
+    </li>
+    <li {% if active_tab == 'statistics' %}class="active"{% endif %}>
+        <a data-toggle="tab" href="#stats-pane" id="stats-tab">
+            <i class="fa fa-bar-chart"></i> {% trans "Statistics" %}
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- ================================================================
+         TAB 1: ORDERS TABLE
+         ================================================================ -->
+    <div id="orders-pane" class="tab-pane {% if active_tab != 'statistics' %}fade in active{% endif %}">
+        <br>
+        <p class="text-muted">
+            {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=paginator.count %}
+                Showing {{ start }}–{{ end }} of {{ total }} tickets
+            {% endblocktrans %}
+        </p>
+
+        {% if rows %}
+        <div class="table-responsive">
+        <table class="table table-condensed table-hover">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="?tab=orders&sort=order_code&dir={% if sort == 'order_code' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Order" %}{% if sort == 'order_code' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?tab=orders&sort=order_datetime&dir={% if sort == 'order_datetime' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Order Date" %}{% if sort == 'order_datetime' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>{% trans "Status" %}</th>
+                    <th>
+                        <a href="?tab=orders&sort=customer_email&dir={% if sort == 'customer_email' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Customer Email" %}{% if sort == 'customer_email' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>{% trans "Invoice Name / Company" %}</th>
+                    <th>{% trans "Street" %}</th>
+                    <th>{% trans "ZIP" %}</th>
+                    <th>{% trans "City" %}</th>
+                    <th>{% trans "Country" %}</th>
+                    <th>
+                        <a href="?tab=orders&sort=attendee_name&dir={% if sort == 'attendee_name' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Attendee Name" %}{% if sort == 'attendee_name' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?tab=orders&sort=attendee_email&dir={% if sort == 'attendee_email' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Attendee Email" %}{% if sort == 'attendee_email' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?tab=orders&sort=item&dir={% if sort == 'item' and direction == 'asc' %}desc{% else %}asc{% endif %}">
+                            {% trans "Ticket Type" %}{% if sort == 'item' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        <a href="{% url 'control:event.order' organizer=request.organizer.slug event=request.event.slug code=row.order.code %}"
+                           target="_blank" rel="noopener">
+                            <code>{{ row.order.code }}</code>
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap">{{ row.order.datetime|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if row.order.status == 'p' %}
+                        <span class="label label-success">{% trans "Paid" %}</span>
+                        {% elif row.order.status == 'n' %}
+                        <span class="label label-warning">{% trans "Pending" %}</span>
+                        {% else %}
+                        <span class="label label-default">{{ row.order.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.order.email|default:"—" }}</td>
+                    <td>{{ row.addr_name|default:"—" }}</td>
+                    <td>{{ row.addr.street|default:"—" }}</td>
+                    <td>{{ row.addr.zipcode|default:"—" }}</td>
+                    <td>{{ row.addr.city|default:"—" }}</td>
+                    <td>{{ row.addr.country|default:"—" }}</td>
+                    <td>{{ row.attendee_name|default:"—" }}</td>
+                    <td>{{ row.position.attendee_email|default:"—" }}</td>
+                    <td>
+                        {{ row.item_name }}{% if row.variation_name %} <small class="text-muted">– {{ row.variation_name }}</small>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        {% if paginator.num_pages > 1 %}
+        <ul class="pagination pagination-sm">
+            {% if page_obj.has_previous %}
+            <li><a href="?tab=orders&sort={{ sort }}&dir={{ direction }}&page=1">&laquo;&laquo;</a></li>
+            <li><a href="?tab=orders&sort={{ sort }}&dir={{ direction }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+            {% endif %}
+            {% for num in paginator.page_range %}
+                {% if num == page_obj.number %}
+                <li class="active"><a href="#">{{ num }}</a></li>
+                {% elif num == 1 or num == paginator.num_pages or num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+                <li><a href="?tab=orders&sort={{ sort }}&dir={{ direction }}&page={{ num }}">{{ num }}</a></li>
+                {% elif num == page_obj.number|add:"-4" or num == page_obj.number|add:"4" %}
+                <li class="disabled"><a href="#">…</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li><a href="?tab=orders&sort={{ sort }}&dir={{ direction }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li><a href="?tab=orders&sort={{ sort }}&dir={{ direction }}&page={{ paginator.num_pages }}">&raquo;&raquo;</a></li>
+            {% endif %}
+        </ul>
+        <p class="text-muted"><small>{% blocktrans with cur=page_obj.number total=paginator.num_pages %}Page {{ cur }} of {{ total }}{% endblocktrans %}</small></p>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">{% trans "No tickets found for this voucher." %}</div>
+        {% endif %}
+    </div>
+
+    <!-- ================================================================
+         TAB 2: STATISTICS
+         ================================================================ -->
+    <div id="stats-pane" class="tab-pane {% if active_tab == 'statistics' %}fade in active{% endif %}">
+        <br>
+        {% if total_tickets == 0 %}
+        <div class="alert alert-info">{% trans "No ticket data available yet for charts." %}</div>
+        {% else %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>{% trans "Tickets Ordered Over Time" %}</strong>
+                <span class="text-muted"> – {% trans "cumulative" %}</span>
+            </div>
+            <div class="panel-body">
+                <div id="timeline-loading" class="text-center text-muted" style="padding:30px 0">
+                    <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+                </div>
+                <canvas id="timelineChart" style="display:none; max-height:350px;"></canvas>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>{% trans "This Voucher vs. All Other Vouchers" %}</strong>
+                <span class="text-muted"> – {% trans "daily tickets" %}</span>
+            </div>
+            <div class="panel-body">
+                <div id="comparison-loading" class="text-center text-muted" style="padding:30px 0">
+                    <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+                </div>
+                <canvas id="comparisonChart" style="display:none; max-height:350px;"></canvas>
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+
+<script src="{% static 'pretix_voucher_statistics/js/chart.min.js' %}"></script>
+<script src="{% static 'pretix_voucher_statistics/js/voucher_detail.js' %}"></script>
+{% endblock %}

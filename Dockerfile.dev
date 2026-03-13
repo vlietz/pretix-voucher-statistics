@@ -1,0 +1,12 @@
+# Development Dockerfile – installs the plugin into the official pretix image
+FROM pretix/standalone:2026.1.1
+
+USER root
+
+# Copy plugin source into the image
+COPY . /plugins/pretix-voucher-statistics/
+
+# Install the plugin in editable mode
+RUN pip install --no-deps -e /plugins/pretix-voucher-statistics/
+
+USER pretixuser

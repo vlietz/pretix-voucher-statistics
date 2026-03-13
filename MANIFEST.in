@@ -1,0 +1,5 @@
+recursive-include pretix_voucher_statistics/templates *
+recursive-include pretix_voucher_statistics/static *
+recursive-include pretix_voucher_statistics/locale *
+include LICENSE
+include README.md
