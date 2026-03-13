@@ -62,12 +62,10 @@
             var datasets = Object.entries(data).map(function (entry, i) {
                 var ev = entry[1];
                 var lookup = {};
-                ev.labels.forEach(function (d, idx) { lookup[d] = ev.cumulative[idx]; });
+                ev.labels.forEach(function (d, idx) { lookup[d] = ev.daily[idx]; });
 
-                var last = 0;
                 var values = dateLabels.map(function (d) {
-                    if (lookup[d] !== undefined) last = lookup[d];
-                    return last;
+                    return lookup[d] !== undefined ? lookup[d] : 0;
                 });
 
                 return {
@@ -88,7 +86,7 @@
                     interaction: { mode: 'index', intersect: false },
                     scales: {
                         x: { title: { display: true, text: labels.date } },
-                        y: { title: { display: true, text: labels.cumulative }, beginAtZero: true },
+                        y: { title: { display: true, text: labels.tickets }, beginAtZero: true },
                     },
                 },
             });
@@ -137,7 +135,7 @@
                             },
                         },
                         y: {
-                            title: { display: true, text: labels.cumulative },
+                            title: { display: true, text: labels.tickets },
                             beginAtZero: true,
                         },
                     },

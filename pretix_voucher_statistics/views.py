@@ -411,11 +411,9 @@ class OrgStatisticsDataView(OrganizerAdminMixin, View):
             date_counts = {row['date']: row['count'] for row in rows}
 
             points = []
-            cumulative = 0
             for days_before in range(30, -1, -1):  # 30 down to 0
                 date = event_start - timedelta(days=days_before)
-                cumulative += date_counts.get(date, 0)
-                points.append({'x': -days_before, 'y': cumulative})
+                points.append({'x': -days_before, 'y': date_counts.get(date, 0)})
 
             result[event.slug] = {
                 'name': str(event.name),
