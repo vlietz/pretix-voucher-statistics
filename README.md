@@ -8,13 +8,13 @@ A pretix plugin that adds detailed statistics and analytics for vouchers.
 - List of all vouchers in an event with ticket counts, sortable by code, tag, or count
 - Voucher detail page with two tabs:
   - **Orders & Attendees**: paginated table of every ticket ordered via the voucher — customer email, invoice address (name, company, street, ZIP, city, country), attendee name/email, ticket type, order date and status; columns are sortable
-  - **Statistics**: timeline chart (daily + cumulative tickets) and a stacked comparison chart (this voucher vs. other vouchers vs. no voucher)
+  - **Statistics**: timeline chart (daily + cumulative tickets), a stacked comparison chart (this voucher vs. other vouchers vs. no voucher), and an all-vouchers daily traffic chart (30 days before event, current voucher highlighted)
 
 ### Organizer-level statistics
 Accessible under the organizer navigation:
 - Select any combination of events
-- **Cumulative tickets over time** – overlaid line chart per event
-- **Ticket ramp-up** – normalized chart with x-axis = days before event start (−30 to 0), so you can directly compare how different events sold over their lead-up period
+- **Tickets per day** – overlaid line chart per event
+- **Ticket ramp-up** – normalized chart with x-axis = days before event start (−30 to 0), daily sales per day so you can spot high-traffic days across events
 - **Top vouchers leaderboard** – per event, top 10 vouchers by ticket count with percentage bars
 
 > Cancelled and refunded orders are excluded everywhere (only paid + pending orders are counted).
@@ -142,6 +142,33 @@ Or if installed directly via pip:
 pip install --upgrade git+https://github.com/vlietz/pretix-voucher-statistics.git
 systemctl restart pretix-web
 ```
+
+---
+
+## Changelog & migration notes
+
+### Breaking change: URL scheme changed (affects existing installations)
+
+Earlier versions registered plugin URLs in the pretix shop-frontend namespace
+(`event_patterns` / `organizer_patterns`). This caused the **"Shop offline"**
+page to appear for any event whose shop was not live.
+
+The URLs were moved to the control-panel namespace (`urlpatterns`) in the
+commit tagged **`Fix: use urlpatterns instead of event_patterns`**. The new
+URL format is:
+
+| Page | Old URL | New URL |
+|------|---------|---------|
+| Event voucher list | `/{organizer}/{event}/voucher-stats/` | `/control/event/{organizer}/{event}/voucher-stats/` |
+| Organizer overview | `/{organizer}/voucher-stats/` | `/control/organizer/{organizer}/voucher-stats/` |
+
+**After updating to this version:**
+1. Run the update commands above (pull → copy → pip install → collectstatic → restart).
+2. Do a **hard refresh** in your browser (Ctrl+Shift+R / Cmd+Shift+R) to clear
+   cached pages that still contain the old nav URLs — otherwise clicking the
+   sidebar link will 404.
+
+Bookmarks to the old URLs will no longer work; update them to the new `/control/…` paths.
 
 ---
 
