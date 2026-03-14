@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -238,6 +238,90 @@ class VoucherDetailView(EventVoucherViewMixin, ChartCSPMixin, TemplateView):
             'active_tab': self.request.GET.get('tab', 'orders'),
         })
         return ctx
+
+
+# ---------------------------------------------------------------------------
+# Voucher Excel export  (event level)
+# ---------------------------------------------------------------------------
+
+class VoucherExportView(EventVoucherViewMixin, View):
+    def get(self, request, *args, **kwargs):
+        from io import BytesIO
+
+        import openpyxl
+        from pretix.base.models import InvoiceAddress
+
+        voucher = get_object_or_404(Voucher, pk=self.kwargs['pk'], event=request.event)
+        event = request.event
+
+        positions = (
+            _positions_qs(event=event, voucher=voucher)
+            .select_related('order', 'item', 'variation')
+            .order_by('order__datetime', 'pk')
+        )
+
+        order_pks = {pos.order_id for pos in positions}
+        addr_map = {
+            ia.order_id: ia
+            for ia in InvoiceAddress.objects.filter(order_id__in=order_pks)
+        }
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Orders'
+
+        ws.append([
+            'Order', 'Order Date', 'Status', 'Customer Email',
+            'Invoice Name / Company', 'Street', 'ZIP', 'City', 'Country',
+            'Attendee Name', 'Attendee Email', 'Ticket Type', 'Variation',
+        ])
+
+        status_labels = {
+            Order.STATUS_PAID: 'Paid',
+            Order.STATUS_PENDING: 'Pending',
+            Order.STATUS_EXPIRED: 'Expired',
+            Order.STATUS_CANCELED: 'Cancelled',
+        }
+
+        for pos in positions:
+            addr = addr_map.get(pos.order_id)
+            addr_name = ''
+            if addr:
+                parts = addr.name_parts or {}
+                addr_name = (
+                    ' '.join(filter(None, [parts.get('given_name', ''), parts.get('family_name', '')]))
+                    or parts.get('_legacy', '')
+                    or addr.company
+                    or ''
+                )
+
+            ws.append([
+                pos.order.code,
+                pos.order.datetime.strftime('%Y-%m-%d %H:%M'),
+                status_labels.get(pos.order.status, pos.order.status),
+                pos.order.email or '',
+                addr_name,
+                addr.street if addr else '',
+                addr.zipcode if addr else '',
+                addr.city if addr else '',
+                str(addr.country) if addr else '',
+                _get_attendee_name(pos),
+                pos.attendee_email or '',
+                str(pos.item.name) if pos.item else '',
+                str(pos.variation.value) if pos.variation else '',
+            ])
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        filename = f'voucher-{voucher.code}-orders.xlsx'
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
 
 # ---------------------------------------------------------------------------

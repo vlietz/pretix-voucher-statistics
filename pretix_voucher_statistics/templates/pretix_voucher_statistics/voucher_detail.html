@@ -62,11 +62,17 @@
          ================================================================ -->
     <div id="orders-pane" class="tab-pane {% if active_tab != 'statistics' %}fade in active{% endif %}">
         <br>
-        <p class="text-muted">
-            {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=paginator.count %}
-                Showing {{ start }}–{{ end }} of {{ total }} tickets
-            {% endblocktrans %}
-        </p>
+        <div class="clearfix">
+            <p class="text-muted pull-left">
+                {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=paginator.count %}
+                    Showing {{ start }}–{{ end }} of {{ total }} tickets
+                {% endblocktrans %}
+            </p>
+            <a href="{% url 'plugins:pretix_voucher_statistics:voucher-export' organizer=request.organizer.slug event=request.event.slug pk=voucher.pk %}"
+               class="btn btn-sm btn-default pull-right">
+                <i class="fa fa-download"></i> {% trans "Download Excel" %}
+            </a>
+        </div>
 
         {% if rows %}
         <div class="table-responsive">
