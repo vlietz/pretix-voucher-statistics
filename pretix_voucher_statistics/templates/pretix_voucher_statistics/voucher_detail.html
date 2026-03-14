@@ -84,22 +84,14 @@
                             {% trans "Order" %}{% if sort == 'order_code' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
                         </a>
                     </th>
+                    <th>{% trans "Status" %}</th>
                     <th>
                         <a href="?tab=orders&sort=order_datetime&dir={% if sort == 'order_datetime' and direction == 'asc' %}desc{% else %}asc{% endif %}">
                             {% trans "Order Date" %}{% if sort == 'order_datetime' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
                         </a>
                     </th>
-                    <th>{% trans "Status" %}</th>
-                    <th>
-                        <a href="?tab=orders&sort=customer_email&dir={% if sort == 'customer_email' and direction == 'asc' %}desc{% else %}asc{% endif %}">
-                            {% trans "Customer Email" %}{% if sort == 'customer_email' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
-                        </a>
-                    </th>
-                    <th>{% trans "Invoice Name / Company" %}</th>
-                    <th>{% trans "Street" %}</th>
-                    <th>{% trans "ZIP" %}</th>
-                    <th>{% trans "City" %}</th>
-                    <th>{% trans "Country" %}</th>
+                    <th>{% trans "Checked In" %}</th>
+                    <th>{% trans "Check-in Time" %}</th>
                     <th>
                         <a href="?tab=orders&sort=attendee_name&dir={% if sort == 'attendee_name' and direction == 'asc' %}desc{% else %}asc{% endif %}">
                             {% trans "Attendee Name" %}{% if sort == 'attendee_name' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
@@ -110,13 +102,15 @@
                             {% trans "Attendee Email" %}{% if sort == 'attendee_email' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
                         </a>
                     </th>
+                    <th>{% trans "Street" %}</th>
+                    <th>{% trans "ZIP" %}</th>
+                    <th>{% trans "City" %}</th>
+                    <th>{% trans "Country" %}</th>
                     <th>
                         <a href="?tab=orders&sort=item&dir={% if sort == 'item' and direction == 'asc' %}desc{% else %}asc{% endif %}">
                             {% trans "Ticket Type" %}{% if sort == 'item' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
                         </a>
                     </th>
-                    <th>{% trans "Checked In" %}</th>
-                    <th>{% trans "Check-in Time" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -128,7 +122,6 @@
                             <code>{{ row.order.code }}</code>
                         </a>
                     </td>
-                    <td style="white-space:nowrap">{{ row.order.datetime|date:"Y-m-d H:i" }}</td>
                     <td>
                         {% if row.order.status == 'p' %}
                         <span class="label label-success">{% trans "Paid" %}</span>
@@ -138,17 +131,7 @@
                         <span class="label label-default">{{ row.order.status }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ row.order.email|default:"—" }}</td>
-                    <td>{{ row.addr_name|default:"—" }}</td>
-                    <td>{{ row.addr.street|default:"—" }}</td>
-                    <td>{{ row.addr.zipcode|default:"—" }}</td>
-                    <td>{{ row.addr.city|default:"—" }}</td>
-                    <td>{{ row.addr.country|default:"—" }}</td>
-                    <td>{{ row.attendee_name|default:"—" }}</td>
-                    <td>{{ row.position.attendee_email|default:"—" }}</td>
-                    <td>
-                        {{ row.item_name }}{% if row.variation_name %} <small class="text-muted">– {{ row.variation_name }}</small>{% endif %}
-                    </td>
+                    <td style="white-space:nowrap">{{ row.order.datetime|date:"Y-m-d H:i" }}</td>
                     <td>
                         {% if row.checked_in %}
                         <span class="label label-success">{% trans "Yes" %}</span>
@@ -157,6 +140,15 @@
                         {% endif %}
                     </td>
                     <td style="white-space:nowrap">{{ row.checkin_time|date:"Y-m-d H:i"|default:"—" }}</td>
+                    <td>{{ row.attendee_name|default:"—" }}</td>
+                    <td>{{ row.position.attendee_email|default:"—" }}</td>
+                    <td>{{ row.addr.street|default:"—" }}</td>
+                    <td>{{ row.addr.zipcode|default:"—" }}</td>
+                    <td>{{ row.addr.city|default:"—" }}</td>
+                    <td>{{ row.addr.country|default:"—" }}</td>
+                    <td>
+                        {{ row.item_name }}{% if row.variation_name %} <small class="text-muted">– {{ row.variation_name }}</small>{% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

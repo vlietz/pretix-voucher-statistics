@@ -173,7 +173,6 @@ class VoucherDetailView(EventVoucherViewMixin, ChartCSPMixin, TemplateView):
         allowed_sorts = {
             'order_code': 'order__code',
             'order_datetime': 'order__datetime',
-            'customer_email': 'order__email',
             'attendee_name': 'attendee_name_cached',
             'attendee_email': 'attendee_email',
             'item': 'item__name',
