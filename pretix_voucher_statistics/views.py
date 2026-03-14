@@ -272,7 +272,6 @@ class VoucherExportView(EventVoucherViewMixin, View):
         for ci in (
             Checkin.objects
             .filter(position_id__in=position_pks, type=Checkin.TYPE_ENTRY, successful=True)
-            .select_related('list')
             .order_by('datetime')
         ):
             checkin_map[ci.position_id].append(ci)
@@ -285,7 +284,7 @@ class VoucherExportView(EventVoucherViewMixin, View):
             'Order', 'Order Date', 'Status', 'Customer Email',
             'Invoice Name / Company', 'Street', 'ZIP', 'City', 'Country',
             'Attendee Name', 'Attendee Email', 'Ticket Type', 'Variation',
-            'Checked In', 'Check-in Date/Time', 'Check-in List',
+            'Checked In', 'Check-in Date/Time',
         ])
 
         status_labels = {
@@ -310,7 +309,6 @@ class VoucherExportView(EventVoucherViewMixin, View):
             checkins = checkin_map.get(pos.pk, [])
             checked_in = 'Yes' if checkins else 'No'
             checkin_times = ', '.join(ci.datetime.strftime('%Y-%m-%d %H:%M') for ci in checkins)
-            checkin_lists = ', '.join(ci.list.name for ci in checkins)
 
             ws.append([
                 pos.order.code,
@@ -328,7 +326,6 @@ class VoucherExportView(EventVoucherViewMixin, View):
                 str(pos.variation.value) if pos.variation else '',
                 checked_in,
                 checkin_times,
-                checkin_lists,
             ])
 
         output = BytesIO()
