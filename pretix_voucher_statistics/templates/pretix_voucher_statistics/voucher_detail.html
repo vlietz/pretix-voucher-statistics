@@ -115,6 +115,8 @@
                             {% trans "Ticket Type" %}{% if sort == 'item' %} <i class="fa fa-sort-{% if direction == 'asc' %}asc{% else %}desc{% endif %}"></i>{% endif %}
                         </a>
                     </th>
+                    <th>{% trans "Checked In" %}</th>
+                    <th>{% trans "Check-in Time" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -147,6 +149,14 @@
                     <td>
                         {{ row.item_name }}{% if row.variation_name %} <small class="text-muted">– {{ row.variation_name }}</small>{% endif %}
                     </td>
+                    <td>
+                        {% if row.checked_in %}
+                        <span class="label label-success">{% trans "Yes" %}</span>
+                        {% else %}
+                        <span class="label label-default">{% trans "No" %}</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space:nowrap">{{ row.checkin_time|date:"Y-m-d H:i"|default:"—" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

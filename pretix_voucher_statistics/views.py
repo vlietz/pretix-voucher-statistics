@@ -194,12 +194,22 @@ class VoucherDetailView(EventVoucherViewMixin, ChartCSPMixin, TemplateView):
         page_obj = paginator.get_page(page_number)
 
         # Pre-fetch invoice addresses for this page's orders
+        page_pks = [pos.pk for pos in page_obj]
         order_pks = {pos.order_id for pos in page_obj}
-        from pretix.base.models import InvoiceAddress
+        from pretix.base.models import Checkin, InvoiceAddress
         addr_map = {
             ia.order_id: ia
             for ia in InvoiceAddress.objects.filter(order_id__in=order_pks)
         }
+
+        # Pre-fetch first successful entry check-in per position
+        checkin_map = {}
+        for ci in (
+            Checkin.objects
+            .filter(position_id__in=page_pks, type=Checkin.TYPE_ENTRY, successful=True)
+            .order_by('datetime')
+        ):
+            checkin_map.setdefault(ci.position_id, ci)
 
         rows = []
         for pos in page_obj:
@@ -213,6 +223,7 @@ class VoucherDetailView(EventVoucherViewMixin, ChartCSPMixin, TemplateView):
                     or addr.company
                 )
 
+            checkin = checkin_map.get(pos.pk)
             rows.append({
                 'position': pos,
                 'order': pos.order,
@@ -221,6 +232,8 @@ class VoucherDetailView(EventVoucherViewMixin, ChartCSPMixin, TemplateView):
                 'variation_name': str(pos.variation.value) if pos.variation else '',
                 'addr': addr,
                 'addr_name': addr_name,
+                'checked_in': checkin is not None,
+                'checkin_time': checkin.datetime if checkin else None,
             })
 
         # Summary stats
