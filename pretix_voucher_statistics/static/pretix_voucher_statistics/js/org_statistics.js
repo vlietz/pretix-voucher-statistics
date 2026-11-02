@@ -36,6 +36,9 @@
         cumulative:    root.dataset.labelCumulative,
         daysBeforeEvent: root.dataset.labelDaysBefore,
         eventDay:      root.dataset.labelEventDay,
+        daysBeforeLast: root.dataset.labelDaysBeforeLast,
+        lastEventDay:  root.dataset.labelLastEventDay,
+        percent:       root.dataset.labelPercent,
         totalTickets:  root.dataset.labelTotalTickets,
         topVouchers:   root.dataset.labelTopVouchers,
         noVouchers:    root.dataset.labelNoVouchers,
@@ -144,6 +147,91 @@
         })
         .catch(function () {
             document.getElementById('days-before-loading').innerHTML =
+                '<span class="text-danger">' + labels.error + '</span>';
+        });
+
+    // --- Cumulative ramp-up aligned to last event day ---
+    fetch(dataUrl + '?' + params + '&type=cumulative_rampup')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            hideLoading('cumulative-rampup-loading', 'cumulativeRampupChart');
+
+            var events = Object.values(data);
+            var mode = 'absolute';
+
+            function buildData(ev) {
+                if (mode === 'absolute') return ev.points;
+                return ev.points.map(function (p) {
+                    return { x: p.x, y: ev.total ? Math.round(p.y / ev.total * 1000) / 10 : 0 };
+                });
+            }
+
+            var chart = new Chart(document.getElementById('cumulativeRampupChart'), {
+                type: 'line',
+                data: {
+                    datasets: events.map(function (ev, i) {
+                        return {
+                            label: ev.name + ' (' + ev.end_date + ')',
+                            data: buildData(ev),
+                            borderColor: color(i),
+                            backgroundColor: colorBg(i),
+                            fill: false,
+                            stepped: false,
+                            tension: 0,
+                            pointRadius: 0,
+                            pointHitRadius: 4,
+                        };
+                    }),
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'x', intersect: false },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function (items) {
+                                    var x = items[0].parsed.x;
+                                    return x === 0 ? labels.lastEventDay : x + ' ' + labels.daysBeforeLast;
+                                },
+                                label: function (item) {
+                                    return item.dataset.label + ': ' + item.parsed.y + (mode === 'percent' ? '%' : '');
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            max: 0,
+                            title: { display: true, text: labels.daysBeforeLast },
+                            ticks: {
+                                callback: function (v) {
+                                    return v === 0 ? labels.lastEventDay : v;
+                                },
+                            },
+                        },
+                        y: {
+                            title: { display: true, text: labels.cumulative },
+                            beginAtZero: true,
+                        },
+                    },
+                },
+            });
+
+            var buttons = document.querySelectorAll('#cumulative-rampup-mode button');
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    mode = btn.dataset.mode;
+                    buttons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+                    chart.data.datasets.forEach(function (ds, i) { ds.data = buildData(events[i]); });
+                    chart.options.scales.y.max = mode === 'percent' ? 100 : undefined;
+                    chart.options.scales.y.title.text = mode === 'percent' ? labels.percent : labels.cumulative;
+                    chart.update();
+                });
+            });
+        })
+        .catch(function () {
+            document.getElementById('cumulative-rampup-loading').innerHTML =
                 '<span class="text-danger">' + labels.error + '</span>';
         });
 

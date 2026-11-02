@@ -15,6 +15,10 @@
      data-label-cumulative="{% trans 'Cumulative Tickets' %}"
      data-label-days-before="{% trans 'Days Before Event' %}"
      data-label-event-day="{% trans 'Event day' %}"
+     data-label-days-before-last="{% trans 'Days before last event day' %}"
+     data-label-last-event-day="{% trans 'Last event day' %}"
+     data-label-absolute="{% trans 'Absolute' %}"
+     data-label-percent="{% trans '% of final total' %}"
      data-label-total-tickets="{% trans 'total tickets' %}"
      data-label-top-vouchers="{% trans 'Top Vouchers' %}"
      data-label-no-vouchers="{% trans 'No vouchers with tickets.' %}"
@@ -86,6 +90,23 @@
             <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
         </div>
         <canvas id="daysBeforeChart" style="display:none; max-height:400px;"></canvas>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong>{% trans "Cumulative Ramp-up until Last Event Day" %}</strong>
+        <span class="text-muted"> – {% trans "x = days before the last event day (0 = last event day), y = cumulative tickets" %}</span>
+        <div class="btn-group btn-group-xs pull-right float-end" role="group" id="cumulative-rampup-mode">
+            <button type="button" class="btn btn-default btn-outline-secondary active" data-mode="absolute">{% trans "Absolute" %}</button>
+            <button type="button" class="btn btn-default btn-outline-secondary" data-mode="percent">{% trans "% of final total" %}</button>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div id="cumulative-rampup-loading" class="text-center text-muted" style="padding:30px 0">
+            <i class="fa fa-spinner fa-spin"></i> {% trans "Loading…" %}
+        </div>
+        <canvas id="cumulativeRampupChart" style="display:none; max-height:400px;"></canvas>
     </div>
 </div>
 

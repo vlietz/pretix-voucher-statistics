@@ -500,6 +500,8 @@ class OrgStatisticsDataView(OrganizerAdminMixin, View):
             return JsonResponse(self._voucher_leaderboard(events_qs))
         elif chart_type == 'days_before':
             return JsonResponse(self._days_before_event(events_qs))
+        elif chart_type == 'cumulative_rampup':
+            return JsonResponse(self._cumulative_rampup(events_qs))
         else:
             return JsonResponse({'error': 'unknown type'}, status=400)
 
@@ -580,6 +582,50 @@ class OrgStatisticsDataView(OrganizerAdminMixin, View):
             result[event.slug] = {
                 'name': str(event.name),
                 'date_from': event_start.isoformat(),
+                'points': points,
+            }
+        return result
+
+    def _cumulative_rampup(self, events):
+        """
+        For each event, return the cumulative ticket count per day over the whole
+        sales period, aligned to the last event day (date_to, falling back to
+        date_from) as x = 0. Earlier days are negative (days before the last
+        event day), so events of different dates can be compared on one axis.
+        Sales after the last event day are ignored.
+        """
+        result = {}
+        for event in events:
+            if not event.date_from:
+                continue
+
+            tz = event.timezone
+            end_dt = event.date_to or event.date_from
+            end_date = end_dt.astimezone(tz).date()
+
+            rows = (
+                _positions_qs(event=event)
+                .annotate(date=TruncDate('order__datetime', tzinfo=tz))
+                .filter(date__lte=end_date)
+                .values('date')
+                .annotate(count=Count('id'))
+                .order_by('date')
+            )
+            date_counts = {row['date']: row['count'] for row in rows}
+
+            points = []
+            if date_counts:
+                first_date = min(date_counts)
+                total = 0
+                for offset in range((end_date - first_date).days, -1, -1):
+                    date = end_date - timedelta(days=offset)
+                    total += date_counts.get(date, 0)
+                    points.append({'x': -offset, 'y': total})
+
+            result[event.slug] = {
+                'name': str(event.name),
+                'end_date': end_date.isoformat(),
+                'total': points[-1]['y'] if points else 0,
                 'points': points,
             }
         return result
