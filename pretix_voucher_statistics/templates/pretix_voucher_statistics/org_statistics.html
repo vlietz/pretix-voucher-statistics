@@ -97,9 +97,17 @@
     <div class="panel-heading">
         <strong>{% trans "Cumulative Ramp-up until Last Event Day" %}</strong>
         <span class="text-muted"> – {% trans "x = days before the last event day (0 = last event day), y = cumulative tickets" %}</span>
-        <div class="btn-group btn-group-xs pull-right float-end" role="group" id="cumulative-rampup-mode">
+        <div class="pull-right float-end" style="display:flex; gap:8px; align-items:center">
+        <label class="text-muted" style="margin:0; font-weight:normal">
+            <small>{% trans "Start at" %}</small>
+            <input type="number" id="cumulative-rampup-threshold" min="0" value="5"
+                   class="form-control input-sm form-control-sm" style="display:inline-block; width:70px; height:auto; padding:1px 4px">
+            <small>{% trans "tickets" %}</small>
+        </label>
+        <div class="btn-group btn-group-xs" role="group" id="cumulative-rampup-mode">
             <button type="button" class="btn btn-default btn-outline-secondary active" data-mode="absolute">{% trans "Absolute" %}</button>
             <button type="button" class="btn btn-default btn-outline-secondary" data-mode="percent">{% trans "% of final total" %}</button>
+        </div>
         </div>
     </div>
     <div class="panel-body">

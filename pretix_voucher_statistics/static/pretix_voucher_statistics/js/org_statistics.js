@@ -166,6 +166,26 @@
                 });
             }
 
+            var thresholdInput = document.getElementById('cumulative-rampup-threshold');
+
+            // Left edge of the x axis: earliest day on which any selected event
+            // reached the threshold (cumulative tickets). Leading days with fewer
+            // tickets are cut off so the interesting part is not squeezed.
+            function computeXMin() {
+                var threshold = parseInt(thresholdInput.value, 10);
+                if (isNaN(threshold) || threshold < 0) threshold = 0;
+                var xMin = 0;
+                events.forEach(function (ev) {
+                    for (var i = 0; i < ev.points.length; i++) {
+                        if (ev.points[i].y >= threshold) {
+                            xMin = Math.min(xMin, ev.points[i].x);
+                            break;
+                        }
+                    }
+                });
+                return xMin < 0 ? xMin : undefined;
+            }
+
             var chart = new Chart(document.getElementById('cumulativeRampupChart'), {
                 type: 'line',
                 data: {
@@ -202,6 +222,7 @@
                     scales: {
                         x: {
                             type: 'linear',
+                            min: computeXMin(),
                             max: 0,
                             title: { display: true, text: labels.daysBeforeLast },
                             ticks: {
@@ -216,6 +237,11 @@
                         },
                     },
                 },
+            });
+
+            thresholdInput.addEventListener('input', function () {
+                chart.options.scales.x.min = computeXMin();
+                chart.update();
             });
 
             var buttons = document.querySelectorAll('#cumulative-rampup-mode button');
